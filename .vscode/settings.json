@@ -1,0 +1,57 @@
+{
+  // ========== 编辑器基础设置 ==========
+  "editor.fontSize": 14,
+  "editor.fontLigatures": true,
+  "editor.lineHeight": 1.6,
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": true,
+  "editor.wordWrap": "on",
+  "editor.minimap.enabled": true,
+  "editor.smoothScrolling": true,
+  "editor.cursorBlinking": "smooth",
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  // ========== 文件与编码 ==========
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  // ========== 终端设置 ==========
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.fontSize": 13,
+  "terminal.integrated.cursorStyle": "line",
+  "terminal.integrated.scrollback": 10000,
+  // ========== 搜索与排除 ==========
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.git": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.cache": true,
+    "**/*.min.js": true
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true
+  },
+  // ========== Git 设置 ==========
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  // ========== 扩展推荐 ==========
+  "extensions.autoUpdate": true,
+  // ========== 工作台外观 ==========
+  "workbench.colorTheme": "Dark+ (default dark)",
+  "workbench.iconTheme": "vscode-icons",
+  "workbench.startupEditor": "welcomePage",
+  "workbench.tree.indent": 20,
+  // ========== 性能优化 ==========
+  "editor.largeFileOptimizations": true,
+  "editor.maxTokenizationLineLength": 20000
+}
