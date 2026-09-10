@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/myrpc_slow_client_test.dir/slow_client_test.cpp.o  -o myrpc_slow_client_test  ../../libmyrpc.a /usr/lib/x86_64-linux-gnu/libprotobuf.so /usr/local/lib/libmuduo_net.a /usr/local/lib/libmuduo_base.a /usr/lib/x86_64-linux-gnu/libzookeeper_mt.so -lpthread 

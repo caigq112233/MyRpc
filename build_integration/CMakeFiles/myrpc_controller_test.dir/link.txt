@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/myrpc_controller_test.dir/tests/unit/controller_test.cpp.o  -o myrpc_controller_test  libmyrpc.a /usr/lib/x86_64-linux-gnu/libprotobuf.so /usr/local/lib/libmuduo_net.a /usr/local/lib/libmuduo_base.a /usr/lib/x86_64-linux-gnu/libzookeeper_mt.so -lpthread 

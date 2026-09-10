@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(MyRpc VERSION 0.1.0 LANGUAGES CXX)
 
 option(MYRPC_BUILD_TESTS "Build MyRpc tests" ON)
+option(MYRPC_BUILD_INTEGRATION_TESTS "Build MyRpc integration and stress tests" OFF)
 option(MYRPC_BUILD_EXAMPLES "Build MyRpc examples" ON)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -21,6 +22,7 @@ add_library(myrpc STATIC
     src/codec/frame.cpp
     src/common/controller.cpp
     src/common/endpoint.cpp
+    src/common/thread_pool.cpp
     src/registry/zookeeper_registry.cpp
     src/server/provider.cpp
 )
@@ -42,10 +44,30 @@ target_compile_options(myrpc PRIVATE -Wall -Wextra -Wpedantic)
 
 if(MYRPC_BUILD_TESTS)
     enable_testing()
+
+    function(add_myrpc_unit_test target)
+        add_executable(${target} ${ARGN})
+        target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+        target_link_libraries(${target} PRIVATE myrpc::myrpc)
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+        add_test(NAME ${target} COMMAND ${target})
+        set_tests_properties(${target} PROPERTIES LABELS "unit")
+    endfunction()
+
     add_executable(myrpc_frame_test tests/unit/frame_test.cpp src/codec/frame.cpp)
     target_include_directories(myrpc_frame_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     target_compile_options(myrpc_frame_test PRIVATE -Wall -Wextra -Wpedantic)
     add_test(NAME myrpc_frame_test COMMAND myrpc_frame_test)
+    set_tests_properties(myrpc_frame_test PROPERTIES LABELS "unit")
+
+    add_myrpc_unit_test(myrpc_endpoint_test tests/unit/endpoint_test.cpp)
+    add_myrpc_unit_test(myrpc_controller_test tests/unit/controller_test.cpp)
+    add_myrpc_unit_test(myrpc_status_test tests/unit/status_test.cpp)
+
+    if(MYRPC_BUILD_INTEGRATION_TESTS)
+        add_subdirectory(tests/integration)
+        add_subdirectory(tests/stress)
+    endif()
 endif()
 
 if(MYRPC_BUILD_EXAMPLES)

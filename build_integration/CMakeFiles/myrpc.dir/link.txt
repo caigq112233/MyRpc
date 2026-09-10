@@ -1,2 +1,0 @@
-/usr/bin/ar qc libmyrpc.a  CMakeFiles/myrpc.dir/src/client/channel.cpp.o CMakeFiles/myrpc.dir/src/codec/frame.cpp.o CMakeFiles/myrpc.dir/src/common/controller.cpp.o CMakeFiles/myrpc.dir/src/common/endpoint.cpp.o CMakeFiles/myrpc.dir/src/common/thread_pool.cpp.o CMakeFiles/myrpc.dir/src/registry/zookeeper_registry.cpp.o CMakeFiles/myrpc.dir/src/server/provider.cpp.o
-/usr/bin/ranlib libmyrpc.a

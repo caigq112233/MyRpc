@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/myrpc_frame_test.dir/tests/unit/frame_test.cpp.o CMakeFiles/myrpc_frame_test.dir/src/codec/frame.cpp.o  -o myrpc_frame_test 

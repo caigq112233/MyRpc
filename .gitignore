@@ -1,5 +1,4 @@
-/build/
-/build_debug/
+/build*/
 *.o
 *.a
 *.so
