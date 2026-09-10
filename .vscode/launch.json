@@ -25,7 +25,7 @@
             "name": "Debug User Server",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build_debug/examples/user_service/myrpc_user_server",
+            "program": "${workspaceFolder}/build_integration/examples/user_service/myrpc_user_server",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

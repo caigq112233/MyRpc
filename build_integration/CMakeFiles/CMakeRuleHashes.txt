@@ -1,0 +1,2 @@
+# Hashes of file build rules.
+71f77f13111fcfa490563b0bae454c36 examples/user_service/user.pb.h

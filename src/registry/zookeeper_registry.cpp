@@ -36,10 +36,17 @@ namespace myrpc
             return EnsurePath("/myrpc");
         }
 
-        // 已经失败时不让其他线程错误地把它当成成功连接。
+        // 会话过期后临时节点已经失效。关闭旧会话并把状态恢复为未启动，
+        // 这样下一次 Resolve/EnsureRegistered 可以建立一个新会话，而不是永久失败。
         if (connection_state_ == ConnectionState::kFailed)
         {
-            return {StatusCode::kUnavailable, "ZooKeeper connection is unavailable"};
+            handle_to_close = handle_;
+            handle_ = nullptr;
+            connection_state_ = ConnectionState::kNotStarted;
+            lock.unlock();
+            if (handle_to_close != nullptr)
+                zookeeper_close(handle_to_close);
+            return Start();
         }
 
         // 只有第一个线程真正发起初始化。
@@ -50,7 +57,7 @@ namespace myrpc
             handle_ = zookeeper_init(
                 connection_string_.c_str(),
                 &ZookeeperRegistry::Watcher,
-                300000,
+                1000,
                 nullptr,
                 this,
                 0);
@@ -107,7 +114,26 @@ namespace myrpc
         Status status = Start();
         if (!status.ok())
             return status;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            const std::string key = service + "\n" + method + "\n" + endpoint.ToString();
+            registrations_[key] = Registration{service, method, endpoint};
+        }
+        status = CreateProviderNode(service, method, endpoint);
+        if (!status.ok())
+            return status;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            registered_generation_ = session_generation_;
+        }
+        return Status::Ok();
+    }
+
+    Status ZookeeperRegistry::CreateProviderNode(const std::string &service, const std::string &method,
+                                                 const Endpoint &endpoint)
+    {
         const std::string base = BasePath(service, method);
+        Status status;
         // 父节点是永久节点；真正的 Provider 节点才是临时顺序节点。
         for (const std::string &path : {std::string("/myrpc/services"),
                                         std::string("/myrpc/services/") + service,
@@ -128,6 +154,41 @@ namespace myrpc
                                       created_path.data(), static_cast<int>(created_path.size()));
         if (result != ZOK)
             return {StatusCode::kUnavailable, "cannot register provider in ZooKeeper"};
+        return Status::Ok();
+    }
+
+    Status ZookeeperRegistry::EnsureRegistered()
+    {
+        Status status = Start();
+        if (!status.ok())
+            return status;
+
+        std::vector<Registration> registrations;
+        std::uint64_t generation = 0;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (registered_generation_ == session_generation_)
+                return Status::Ok();
+            generation = session_generation_;
+            for (const auto &[key, registration] : registrations_)
+            {
+                (void)key;
+                registrations.push_back(registration);
+            }
+        }
+        for (const Registration &registration : registrations)
+        {
+            status = CreateProviderNode(registration.service, registration.method, registration.endpoint);
+            if (!status.ok())
+                return status;
+        }
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            // 如果补注册过程中再次发生了会话切换，保留“不完整”标记，交由下一轮重试。
+            if (session_generation_ == generation)
+                registered_generation_ = generation;
+        }
+        std::cout << "EnsureRegistered" << "\n";
         return Status::Ok();
     }
 
@@ -183,9 +244,6 @@ namespace myrpc
 
     void ZookeeperRegistry::OnSessionEvent(int type, int state)
     {
-        std::cout << "ZooKeeper event: type=" << type
-                  << ", state=" << state << std::endl;
-
         if (type != ZOO_SESSION_EVENT)
         {
             return;
@@ -195,6 +253,14 @@ namespace myrpc
 
         if (state == ZOO_CONNECTED_STATE)
         {
+            // 只有 Start 正在等待的连接才代表新 session；普通网络闪断后的
+            // ZOO_CONNECTED_STATE 仍是同一 session，不能重复创建临时节点。
+            if (connection_state_ == ConnectionState::kConnecting)
+            {
+                std::cout << "connectioned" << "\n";
+                ++session_generation_;
+                registered_generation_ = 0;
+            }
             connection_state_ = ConnectionState::kConnected;
             connected_cv_.notify_all();
             return;
@@ -204,7 +270,9 @@ namespace myrpc
         if (state == ZOO_AUTH_FAILED_STATE ||
             state == ZOO_EXPIRED_SESSION_STATE)
         {
+            std::cout << "disconnectioned" << "\n";
             connection_state_ = ConnectionState::kFailed;
+            registered_generation_ = 0;
             connected_cv_.notify_all();
         }
     }

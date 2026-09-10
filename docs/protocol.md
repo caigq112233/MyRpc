@@ -1,23 +1,25 @@
-# MyRpc v1 协议
+# MyRpc v2 协议
 
-所有多字节整数均为大端序。固定头长为 32 字节：
+所有多字节整数均为大端序。固定头长为 36 字节：
 
 | 字段 | 字节数 |
 |---|---:|
 | magic（MRPC） | 4 |
 | version | 2 |
-| type（request=1，response=2） | 2 |
+| type（request=1，response=2，cancel=3） | 2 |
 | request_id | 8 |
 | status_code | 4 |
+| timeout_ms | 4 |
 | service_len | 4 |
 | method_len | 4 |
 | payload_len | 4 |
 
-其后依次拼接 service、method、payload。请求的 status_code 必须为 0；响应 payload 为成功时的 Protobuf 数据，失败时为错误说明。服务端只在缓冲区中存在完整帧时才消费数据。
+其后依次拼接 service、method、payload。请求的 status_code 必须为 0；timeout_ms 为客户端剩余等待时间，0 表示采用服务端上限。响应 payload 为成功时的 Protobuf 数据，失败时为错误说明。cancel 帧只携带 request_id。服务端只在缓冲区中存在完整帧时才消费数据。
 
 
 enum class StatusCode {
     kOk = 0,
+    kCancelled,
     kInvalidArgument,
     kUnavailable,
     kDeadlineExceeded,

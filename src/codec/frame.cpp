@@ -51,8 +51,17 @@ Status ValidateLengths(const RpcFrame& frame) {
     if (frame.payload.size() > FrameCodec::kMaxPayloadBytes) {
         return {StatusCode::kInvalidArgument, "RPC payload exceeds maximum size"};
     }
-    if (frame.type != FrameType::kRequest && frame.type != FrameType::kResponse) {
+    if (frame.type != FrameType::kRequest && frame.type != FrameType::kResponse &&
+        frame.type != FrameType::kCancel) {
         return {StatusCode::kInvalidArgument, "unknown RPC frame type"};
+    }
+    if (frame.type == FrameType::kRequest && frame.status_code != 0) {
+        return {StatusCode::kInvalidArgument, "request status_code must be zero"};
+    }
+    if (frame.type == FrameType::kCancel &&
+        (frame.status_code != 0 || !frame.service.empty() || !frame.method.empty() ||
+         !frame.payload.empty())) {
+        return {StatusCode::kInvalidArgument, "cancel frame must contain only request_id"};
     }
     return Status::Ok();
 }
@@ -73,6 +82,7 @@ Status FrameCodec::Encode(const RpcFrame& frame, std::string* output) {
     AppendU16(output, static_cast<std::uint16_t>(frame.type));
     AppendU64(output, frame.request_id);
     AppendU32(output, frame.status_code);
+    AppendU32(output, frame.timeout_ms);
     AppendU32(output, static_cast<std::uint32_t>(frame.service.size()));
     AppendU32(output, static_cast<std::uint32_t>(frame.method.size()));
     AppendU32(output, static_cast<std::uint32_t>(frame.payload.size()));
@@ -94,17 +104,26 @@ Status FrameCodec::DecodeOne(std::string_view input, RpcFrame* frame, std::size_
     }
     const auto raw_type = ReadU16(input, 6);
     if (raw_type != static_cast<std::uint16_t>(FrameType::kRequest) &&
-        raw_type != static_cast<std::uint16_t>(FrameType::kResponse)) {
+        raw_type != static_cast<std::uint16_t>(FrameType::kResponse) &&
+        raw_type != static_cast<std::uint16_t>(FrameType::kCancel)) {
         return {StatusCode::kProtocolError, "invalid RPC frame type"};
     }
 
-    const std::uint32_t service_size = ReadU32(input, 20);
-    const std::uint32_t method_size = ReadU32(input, 24);
-    const std::uint32_t payload_size = ReadU32(input, 28);
+    const std::uint32_t service_size = ReadU32(input, 24);
+    const std::uint32_t method_size = ReadU32(input, 28);
+    const std::uint32_t payload_size = ReadU32(input, 32);
     if (static_cast<std::size_t>(service_size) + static_cast<std::size_t>(method_size) >
             kMaxHeaderBytes ||
         payload_size > kMaxPayloadBytes) {
         return {StatusCode::kProtocolError, "RPC frame length exceeds limit"};
+    }
+    if (raw_type == static_cast<std::uint16_t>(FrameType::kRequest) &&
+        ReadU32(input, 16) != 0) {
+        return {StatusCode::kProtocolError, "request status_code must be zero"};
+    }
+    if (raw_type == static_cast<std::uint16_t>(FrameType::kCancel) &&
+        (ReadU32(input, 16) != 0 || service_size != 0 || method_size != 0 || payload_size != 0)) {
+        return {StatusCode::kProtocolError, "cancel frame must contain only request_id"};
     }
     const std::size_t total_size = kFixedHeaderSize + service_size + method_size + payload_size;
     // TCP 不保证一次读取一帧。数据不足时不报错，交由上层保留字节等待下次读取。
@@ -113,6 +132,7 @@ Status FrameCodec::DecodeOne(std::string_view input, RpcFrame* frame, std::size_
     frame->type = static_cast<FrameType>(raw_type);
     frame->request_id = ReadU64(input, 8);
     frame->status_code = ReadU32(input, 16);
+    frame->timeout_ms = ReadU32(input, 20);
     std::size_t cursor = kFixedHeaderSize;
     frame->service.assign(input.data() + cursor, service_size);
     cursor += service_size;
@@ -121,6 +141,15 @@ Status FrameCodec::DecodeOne(std::string_view input, RpcFrame* frame, std::size_
     frame->payload.assign(input.data() + cursor, payload_size);
     *consumed = total_size;
     return Status::Ok();
+}
+
+bool FrameCodec::TryGetRequestId(std::string_view input, std::uint64_t* request_id) {
+    if (request_id == nullptr || input.size() < 16 || ReadU32(input, 0) != kMagic ||
+        ReadU16(input, 4) != kVersion) {
+        return false;
+    }
+    *request_id = ReadU64(input, 8);
+    return true;
 }
 
 Status FrameParser::Append(std::string_view bytes, std::vector<RpcFrame>* frames) {

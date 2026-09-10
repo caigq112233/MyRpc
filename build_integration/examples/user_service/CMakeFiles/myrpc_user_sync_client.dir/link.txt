@@ -1,0 +1,1 @@
+/usr/bin/c++  -g   CMakeFiles/myrpc_user_sync_client.dir/sync_client.cpp.o  -o myrpc_user_sync_client  ../../libmyrpc.a libmyrpc_user_proto.a /usr/local/lib/libmuduo_net.a /usr/local/lib/libmuduo_base.a /usr/lib/x86_64-linux-gnu/libzookeeper_mt.so /usr/lib/x86_64-linux-gnu/libprotobuf.so -lpthread 

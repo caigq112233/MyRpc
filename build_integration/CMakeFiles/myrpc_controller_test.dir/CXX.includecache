@@ -1,0 +1,40 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/myrpc/controller.hpp
+atomic
+-
+chrono
+-
+cstdint
+-
+mutex
+-
+string
+-
+google/protobuf/service.h
+-
+myrpc/status.hpp
+../include/myrpc/myrpc/status.hpp
+
+../include/myrpc/status.hpp
+string
+-
+utility
+-
+
+/home/caigq/codes/MyRpcV2/tests/unit/controller_test.cpp
+cassert
+-
+chrono
+-
+thread
+-
+myrpc/controller.hpp
+/home/caigq/codes/MyRpcV2/tests/unit/myrpc/controller.hpp
+

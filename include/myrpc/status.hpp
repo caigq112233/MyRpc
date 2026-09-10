@@ -7,6 +7,7 @@ namespace myrpc {
 
 enum class StatusCode {
     kOk = 0,
+    kCancelled,
     kInvalidArgument,
     kUnavailable,
     kDeadlineExceeded,

@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmyrpc_user_proto.a  CMakeFiles/myrpc_user_proto.dir/user.pb.cc.o
+/usr/bin/ranlib libmyrpc_user_proto.a

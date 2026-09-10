@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/myrpc/endpoint.hpp
+cstdint
+-
+string
+-
+myrpc/status.hpp
+../include/myrpc/myrpc/status.hpp
+
+../include/myrpc/status.hpp
+string
+-
+utility
+-
+
+/home/caigq/codes/MyRpcV2/tests/unit/endpoint_test.cpp
+cassert
+-
+myrpc/endpoint.hpp
+/home/caigq/codes/MyRpcV2/tests/unit/myrpc/endpoint.hpp
+
